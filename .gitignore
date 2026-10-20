@@ -1,0 +1,35 @@
+# ---- macOS ----
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# ---- Cloud-sync artifacts ----
+# Ignore sync clients' temp/conflict files (e.g. Google Drive)
+*.tmp.driveupload
+*.tmp.drivedownload
+*conflicted copy*
+desktop.ini
+
+# ---- Xcode ----
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+*.hmap
+*.dSYM/
+*.dSYM.zip
+
+# ---- Swift Package Manager ----
+.build/
+.swiftpm/
+
+# ---- XcodeGen generated project ----
+# project.yml is the source of truth; run `xcodegen generate`
+TicketRadar.xcodeproj/
+
+# ---- JetBrains IDEs ----
+.idea/
+*.iml
