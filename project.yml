@@ -17,8 +17,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.asolfre.ticketradar
         PRODUCT_NAME: TicketRadar
-        MARKETING_VERSION: "0.1.0"
-        CURRENT_PROJECT_VERSION: "6"
+        MARKETING_VERSION: "0.1.1"
+        CURRENT_PROJECT_VERSION: "7"
         SWIFT_VERSION: "5.10"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         INFOPLIST_FILE: TicketRadar/Resources/Info.plist
@@ -32,8 +32,8 @@ targets:
         CFBundleName: TicketRadar
         CFBundleDisplayName: TicketRadar
         CFBundleIdentifier: com.asolfre.ticketradar
-        CFBundleVersion: "6"
-        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "7"
+        CFBundleShortVersionString: "0.1.1"
         CFBundlePackageType: APPL
         CFBundleExecutable: TicketRadar
         CFBundleIconName: AppIcon
