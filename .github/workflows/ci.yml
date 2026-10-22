@@ -34,15 +34,6 @@ jobs:
       - name: Committed Info.plist matches project.yml
         run: git diff --exit-code -- TicketRadar/Resources/Info.plist
 
-      - name: Version pairs agree
-        run: |
-          v() { sed -n "s/^ *$1: \"\(.*\)\"$/\1/p" project.yml; }
-          if [ "$(v MARKETING_VERSION)" != "$(v CFBundleShortVersionString)" ] ||
-             [ "$(v CURRENT_PROJECT_VERSION)" != "$(v CFBundleVersion)" ]; then
-            echo "::error::project.yml version pairs differ; bump both (see AGENTS.md)"
-            exit 1
-          fi
-
       - name: Debug build
         run: >-
           xcodebuild -project TicketRadar.xcodeproj -scheme TicketRadar

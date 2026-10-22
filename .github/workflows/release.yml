@@ -8,6 +8,7 @@ permissions:
   contents: write
 
 jobs:
+  # Only the release build: ci.yml must already be green on the tagged commit.
   release:
     # Keep runner, DEVELOPER_DIR and the version check in sync with ci.yml.
     runs-on: xcode-27
@@ -16,15 +17,8 @@ jobs:
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
       - uses: actions/checkout@v7
-
-      - name: Tag must match the app version
-        run: |
-          version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' TicketRadar/Resources/Info.plist)
-          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match app version $version"
-            exit 1
-          fi
-          echo "VERSION=$version" >> "$GITHUB_ENV"
+        with:
+          persist-credentials: false  # later steps need no git auth; gh uses GH_TOKEN
 
       - name: Xcode version
         run: xcodebuild -version | tee /dev/stderr | grep '^Xcode 27\.1' >/dev/null
@@ -34,27 +28,15 @@ jobs:
           brew install xcodegen
           xcodegen generate
 
-      - name: Committed Info.plist matches project.yml
-        run: git diff --exit-code -- TicketRadar/Resources/Info.plist
-
-      - name: Version pairs agree
+      # After generating: the generated Info.plist is the one that ships.
+      - name: Tag must match the app version
         run: |
-          v() { sed -n "s/^ *$1: \"\(.*\)\"$/\1/p" project.yml; }
-          if [ "$(v MARKETING_VERSION)" != "$(v CFBundleShortVersionString)" ] ||
-             [ "$(v CURRENT_PROJECT_VERSION)" != "$(v CFBundleVersion)" ]; then
-            echo "::error::project.yml version pairs differ; bump both (see AGENTS.md)"
+          version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' TicketRadar/Resources/Info.plist)
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match app version $version"
             exit 1
           fi
-
-      - name: Debug build
-        run: >-
-          xcodebuild -project TicketRadar.xcodeproj -scheme TicketRadar
-          -configuration Debug -destination 'platform=macOS'
-          -derivedDataPath "$RUNNER_TEMP/dd" -quiet build
-
-      - name: Self-check
-        timeout-minutes: 5
-        run: TR_SELFCHECK=1 "$RUNNER_TEMP/dd/Build/Products/Debug/TicketRadar.app/Contents/MacOS/TicketRadar"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Release build (universal)
         run: >-

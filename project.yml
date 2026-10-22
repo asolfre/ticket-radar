@@ -17,8 +17,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.asolfre.ticketradar
         PRODUCT_NAME: TicketRadar
-        MARKETING_VERSION: "0.1.1"
-        CURRENT_PROJECT_VERSION: "7"
         SWIFT_VERSION: "5.10"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         INFOPLIST_FILE: TicketRadar/Resources/Info.plist
