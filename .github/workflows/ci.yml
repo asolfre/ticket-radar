@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # Preview image; same Xcode build as local development. Fallback (see
+    # AGENTS.md): macos-26, Xcode_26.6.app and '^Xcode 26\.6' together.
+    runs-on: xcode-27
+    timeout-minutes: 20
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Xcode version
+        run: xcodebuild -version | tee /dev/stderr | grep '^Xcode 27\.1' >/dev/null
+
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Committed Info.plist matches project.yml
+        run: git diff --exit-code -- TicketRadar/Resources/Info.plist
+
+      - name: Version pairs agree
+        run: |
+          v() { sed -n "s/^ *$1: \"\(.*\)\"$/\1/p" project.yml; }
+          if [ "$(v MARKETING_VERSION)" != "$(v CFBundleShortVersionString)" ] ||
+             [ "$(v CURRENT_PROJECT_VERSION)" != "$(v CFBundleVersion)" ]; then
+            echo "::error::project.yml version pairs differ; bump both (see AGENTS.md)"
+            exit 1
+          fi
+
+      - name: Debug build
+        run: >-
+          xcodebuild -project TicketRadar.xcodeproj -scheme TicketRadar
+          -configuration Debug -destination 'platform=macOS'
+          -derivedDataPath "$RUNNER_TEMP/dd" -quiet build
+
+      - name: Self-check
+        timeout-minutes: 5
+        run: TR_SELFCHECK=1 "$RUNNER_TEMP/dd/Build/Products/Debug/TicketRadar.app/Contents/MacOS/TicketRadar"
+
+      # 'generic/platform=macOS': with 'platform=macOS' Xcode builds only the
+      # runner's architecture, even in Release.
+      - name: Release build (universal)
+        run: >-
+          xcodebuild -project TicketRadar.xcodeproj -scheme TicketRadar
+          -configuration Release -destination 'generic/platform=macOS'
+          -derivedDataPath "$RUNNER_TEMP/dd" -quiet build
+
+      - name: Check the release app
+        run: |
+          app="$RUNNER_TEMP/dd/Build/Products/Release/TicketRadar.app"
+          for arch in arm64 x86_64; do
+            lipo "$app/Contents/MacOS/TicketRadar" -verify_arch "$arch" ||
+              { echo "::error::release app lacks $arch"; exit 1; }
+          done
+          codesign --verify --strict "$app"
+          /usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' -c 'Print CFBundleVersion' "$app/Contents/Info.plist"

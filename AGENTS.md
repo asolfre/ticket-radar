@@ -29,6 +29,9 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
 - **Only edited existing files?** No need to re-run `xcodegen generate` —
   the existing `.xcodeproj` already references them. Regenerate only when
   adding/removing/renaming source files.
+- **Universal Release builds need `-destination 'generic/platform=macOS'`.**
+  With `'platform=macOS'` Xcode builds only the current Mac's architecture,
+  even in Release, despite `ARCHS = arm64 x86_64`.
 
 ### Build output
 The app lands in DerivedData, not the repo. **Don't glob for
@@ -75,6 +78,26 @@ Bump both pairs in `project.yml` — `MARKETING_VERSION` /
 app). Then `xcodegen generate` and commit the regenerated
 `TicketRadar/Resources/Info.plist` too. Releases get an annotated tag
 (`v0.1.0`).
+
+### CI and releases
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request:
+Xcode version check, `xcodegen generate` plus a check that the committed
+`Info.plist` is unchanged, version pairs agree, Debug build + self-check,
+universal Release build with `lipo` and `codesign` checks.
+`.github/workflows/release.yml` repeats those checks on a `v*` tag, requires
+the tag to equal `v` + `CFBundleShortVersionString`, and publishes
+`TicketRadar-<version>-macos-universal.zip` plus its `.sha256` as a GitHub
+release, with the annotated tag's message as release notes.
+
+Both run on the **preview** `xcode-27` image with Xcode pinned to 27.1 (the
+local version) through `DEVELOPER_DIR`. If that image queues repeatedly or
+breaks, fall back in **both** files at once: `runs-on: macos-26`,
+`DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer`, and the
+version check pattern `'^Xcode 26\.6'`.
+
+To release: bump the version (above), commit, push `main` and wait for CI to
+pass, then `git tag -a vX.Y.Z -m "<release notes>"` and push the tag. Push
+only when the user asks.
 
 ## Publishing
 This repository is public. Push only when the user asks.
