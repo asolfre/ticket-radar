@@ -107,10 +107,11 @@ Both must be authenticated before launching TicketRadar.
 
 ## Download
 
-Get `TicketRadar-<version>-macos-universal.zip` from the
+Get `TicketRadar-<version>-macos-universal.dmg` from the
 [latest release](https://github.com/asolfre/ticket-radar/releases/latest),
-unzip it and move **TicketRadar.app** to **Applications**. It runs on Apple
-silicon and Intel Macs with macOS 14 or later (tested on macOS 27).
+open it, drag **TicketRadar** onto **Applications**, then eject the disk image.
+It runs on Apple silicon and Intel Macs with macOS 14 or later (tested on
+macOS 27).
 
 TicketRadar is not notarized by Apple, so macOS blocks the first launch. Open it
 once, then go to **System Settings → Privacy & Security** and click

@@ -44,28 +44,39 @@ jobs:
           -configuration Release -destination 'generic/platform=macOS'
           -derivedDataPath "$RUNNER_TEMP/dd" -quiet build
 
-      - name: Check and package the release app
+      - name: Build and check the DMG
         run: |
-          app="$RUNNER_TEMP/dd/Build/Products/Release/TicketRadar.app"
+          # hdiutil fails intermittently ("Resource temporarily unavailable",
+          # seen locally right after a fresh build, image busy for >30 s).
+          retry() { for i in 1 2 3 4 5 6; do "$@" && return; echo "retry $i: $1 $2"; sleep 10; done; return 1; }
+          dmg="TicketRadar-$VERSION-macos-universal.dmg"
+          stage="$RUNNER_TEMP/dmg" mnt="$RUNNER_TEMP/mnt"
+          mkdir "$stage"
+          ditto "$RUNNER_TEMP/dd/Build/Products/Release/TicketRadar.app" "$stage/TicketRadar.app"
+          ln -s /Applications "$stage/Applications"
+          retry hdiutil create -volname "TicketRadar $VERSION" -srcfolder "$stage" -format UDZO -ov "$dmg"
+          # Check what ships: -verify checks the image checksums, then the app inside.
+          retry hdiutil attach -verify -readonly -nobrowse -mountpoint "$mnt" "$dmg"
+          trap 'hdiutil detach "$mnt" -quiet' EXIT
           for arch in arm64 x86_64; do
-            lipo "$app/Contents/MacOS/TicketRadar" -verify_arch "$arch" ||
-              { echo "::error::release app lacks $arch"; exit 1; }
+            lipo "$mnt/TicketRadar.app/Contents/MacOS/TicketRadar" -verify_arch "$arch" ||
+              { echo "::error::DMG app lacks $arch"; exit 1; }
           done
-          codesign --verify --strict "$app"
-          zip="TicketRadar-$VERSION-macos-universal.zip"
-          ditto -c -k --keepParent "$app" "$zip"
-          shasum -a 256 "$zip" > "$zip.sha256"
-          echo "ZIP=$zip" >> "$GITHUB_ENV"
+          codesign --verify --strict "$mnt/TicketRadar.app"
+          [ "$(readlink "$mnt/Applications")" = /Applications ] ||
+            { echo "::error::DMG lacks the Applications link"; exit 1; }
+          shasum -a 256 "$dmg" > "$dmg.sha256"
+          echo "DMG=$dmg" >> "$GITHUB_ENV"
 
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "$ZIP" "$ZIP.sha256" \
+          gh release create "$GITHUB_REF_NAME" "$DMG" "$DMG.sha256" \
             --title "TicketRadar $VERSION" --notes-from-tag
           assets=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name')
           echo "$assets"
-          for f in "$ZIP" "$ZIP.sha256"; do
+          for f in "$DMG" "$DMG.sha256"; do
             grep -Fx "$f" <<<"$assets" >/dev/null ||
               { echo "::error::release is missing asset $f"; exit 1; }
           done
