@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  # Only the release build: ci.yml must already be green on the tagged commit.
+  release:
+    # Keep runner, DEVELOPER_DIR and the version check in sync with ci.yml.
+    runs-on: xcode-27
+    timeout-minutes: 20
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false  # later steps need no git auth; gh uses GH_TOKEN
+
+      - name: Xcode version
+        run: xcodebuild -version | tee /dev/stderr | grep '^Xcode 27\.1' >/dev/null
+
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      # After generating: the generated Info.plist is the one that ships.
+      - name: Tag must match the app version
+        run: |
+          version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' TicketRadar/Resources/Info.plist)
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match app version $version"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Release build (universal)
+        run: >-
+          xcodebuild -project TicketRadar.xcodeproj -scheme TicketRadar
+          -configuration Release -destination 'generic/platform=macOS'
+          -derivedDataPath "$RUNNER_TEMP/dd" -quiet build
+
+      - name: Check and package the release app
+        run: |
+          app="$RUNNER_TEMP/dd/Build/Products/Release/TicketRadar.app"
+          for arch in arm64 x86_64; do
+            lipo "$app/Contents/MacOS/TicketRadar" -verify_arch "$arch" ||
+              { echo "::error::release app lacks $arch"; exit 1; }
+          done
+          codesign --verify --strict "$app"
+          zip="TicketRadar-$VERSION-macos-universal.zip"
+          ditto -c -k --keepParent "$app" "$zip"
+          shasum -a 256 "$zip" > "$zip.sha256"
+          echo "ZIP=$zip" >> "$GITHUB_ENV"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$ZIP" "$ZIP.sha256" \
+            --title "TicketRadar $VERSION" --notes-from-tag
+          assets=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name')
+          echo "$assets"
+          for f in "$ZIP" "$ZIP.sha256"; do
+            grep -Fx "$f" <<<"$assets" >/dev/null ||
+              { echo "::error::release is missing asset $f"; exit 1; }
+          done

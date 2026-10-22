@@ -4,7 +4,7 @@
 
 Track multiple Jira tickets, see their linked GitHub PRs, review status, CI health, and get notified when things change — all without leaving your desktop.
 
-![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift 5.10](https://img.shields.io/badge/Swift-5.10-orange) ![License: MIT](https://img.shields.io/badge/License-MIT-green)
+![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift 5.10](https://img.shields.io/badge/Swift-5.10-orange) ![License: MIT](https://img.shields.io/badge/License-MIT-green) [![CI](https://github.com/asolfre/ticket-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/asolfre/ticket-radar/actions/workflows/ci.yml)
 
 ---
 
@@ -105,7 +105,26 @@ Both must be authenticated before launching TicketRadar.
 
 ---
 
-## Install
+## Download
+
+Get `TicketRadar-<version>-macos-universal.zip` from the
+[latest release](https://github.com/asolfre/ticket-radar/releases/latest),
+unzip it and move **TicketRadar.app** to **Applications**. It runs on Apple
+silicon and Intel Macs with macOS 14 or later (tested on macOS 27).
+
+TicketRadar is not notarized by Apple, so macOS blocks the first launch. Open it
+once, then go to **System Settings → Privacy & Security** and click
+**Open Anyway**. Or, in Terminal:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/TicketRadar.app
+```
+
+`gh` and `acli` (see [Prerequisites](#prerequisites)) are still required.
+
+---
+
+## Build from source
 
 ```bash
 # Clone
