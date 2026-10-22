@@ -54,6 +54,12 @@ open -n "$(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
   | awk '/ BUILT_PRODUCTS_DIR/{print $3}')/TicketRadar.app"
 ```
 
+Quit any other running TicketRadar first, such as a release copy in
+`/Applications` (`open -n` starts a second one). Every copy shares
+`~/Library/Application Support/TicketRadar/` and `acli`'s active site: two
+copies overwrite each other's `tickets.json` and switch Jira sites under each
+other, because each serializes `acli` only within its own process.
+
 ### Verify: self-check
 A green build does not run anything. After building, run the DEBUG
 self-check — it exits **0** when every check passes, **1** with a
@@ -102,6 +108,10 @@ plans or commit messages. Use the fictional names already in the repo: Jira
 `acme-health`, prefixes `DATA` / `API` / `OPS`, and the `DEMO-…` tickets
 from `DemoData.swift`. Investigations of real tickets belong outside the
 repository.
+
+Commits created on GitHub never pass through local git hooks: merges from the
+web UI, including the squash-merge message GitHub assembles from the PR's
+commits. After `git fetch`, check them against this rule before tagging.
 
 ## Prerequisites
 `gh` and `acli` must be installed and authenticated (the app shells out to
