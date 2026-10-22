@@ -30,8 +30,8 @@ targets:
         CFBundleName: TicketRadar
         CFBundleDisplayName: TicketRadar
         CFBundleIdentifier: com.asolfre.ticketradar
-        CFBundleVersion: "7"
-        CFBundleShortVersionString: "0.1.1"
+        CFBundleVersion: "8"
+        CFBundleShortVersionString: "0.1.2"
         CFBundlePackageType: APPL
         CFBundleExecutable: TicketRadar
         CFBundleIconName: AppIcon
