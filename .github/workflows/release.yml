@@ -46,9 +46,6 @@ jobs:
 
       - name: Package and check the DMG and zip
         run: |
-          # hdiutil fails intermittently ("Resource temporarily unavailable",
-          # seen locally right after a fresh build, image busy for >30 s).
-          retry() { for i in 1 2 3 4 5 6; do "$@" && return; echo "retry $i: $1 $2"; sleep 10; done; return 1; }
           # Check what ships: the app inside each package.
           check_app() {
             for arch in arm64 x86_64; do
@@ -64,9 +61,9 @@ jobs:
           mkdir "$stage"
           ditto "$app" "$stage/TicketRadar.app"
           ln -s /Applications "$stage/Applications"
-          retry hdiutil create -volname "TicketRadar $VERSION" -srcfolder "$stage" -format UDZO -ov "$base.dmg"
+          hdiutil create -volname "TicketRadar $VERSION" -srcfolder "$stage" -format UDZO -ov "$base.dmg"
           # -verify checks the image checksums before mounting.
-          retry hdiutil attach -verify -readonly -nobrowse -mountpoint "$mnt" "$base.dmg"
+          hdiutil attach -verify -readonly -nobrowse -mountpoint "$mnt" "$base.dmg"
           trap 'hdiutil detach "$mnt" -quiet' EXIT
           check_app "$mnt/TicketRadar.app" DMG
           [ "$(readlink "$mnt/Applications")" = /Applications ] ||

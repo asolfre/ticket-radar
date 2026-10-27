@@ -93,6 +93,10 @@ breaks, fall back in **both** files at once: `runs-on: macos-26`,
 `DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer`, and the
 version check pattern `'^Xcode 26\.6'`.
 
+If the release job fails while creating or attaching the DMG ("Resource
+temporarily unavailable"), re-run the job: locally, a macOS background
+service occasionally held a freshly created image for minutes.
+
 To release: bump the version (above), commit, push `main` and wait for CI to
 pass (the release job does not re-run CI's checks), then
 `git tag -a vX.Y.Z -m "<release notes>"` and push the tag. Push only when the
