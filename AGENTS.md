@@ -54,6 +54,12 @@ open -n "$(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
   | awk '/ BUILT_PRODUCTS_DIR/{print $3}')/TicketRadar.app"
 ```
 
+Quit any other running TicketRadar first, such as a release copy in
+`/Applications` (`open -n` starts a second one). Every copy shares
+`~/Library/Application Support/TicketRadar/` and `acli`'s active site: two
+copies overwrite each other's `tickets.json` and switch Jira sites under each
+other, because each serializes `acli` only within its own process.
+
 ### Verify: self-check
 A green build does not run anything. After building, run the DEBUG
 self-check — it exits **0** when every check passes, **1** with a
@@ -87,6 +93,10 @@ breaks, fall back in **both** files at once: `runs-on: macos-26`,
 `DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer`, and the
 version check pattern `'^Xcode 26\.6'`.
 
+If the release job fails while creating or attaching the DMG ("Resource
+temporarily unavailable"), re-run the job: locally, a macOS background
+service occasionally held a freshly created image for minutes.
+
 To release: bump the version (above), commit, push `main` and wait for CI to
 pass (the release job does not re-run CI's checks), then
 `git tag -a vX.Y.Z -m "<release notes>"` and push the tag. Push only when the
@@ -102,6 +112,10 @@ plans or commit messages. Use the fictional names already in the repo: Jira
 `acme-health`, prefixes `DATA` / `API` / `OPS`, and the `DEMO-…` tickets
 from `DemoData.swift`. Investigations of real tickets belong outside the
 repository.
+
+Commits created on GitHub never pass through local git hooks: merges from the
+web UI, including the squash-merge message GitHub assembles from the PR's
+commits. After `git fetch`, check them against this rule before tagging.
 
 ## Prerequisites
 `gh` and `acli` must be installed and authenticated (the app shells out to
