@@ -4,14 +4,14 @@
 **Status:** planned 2026-11-06, challenged three times (R1–R3) and amended
 
 ## 0. Status
-- [ ] 1. Backup format, read, merge and save logic (`Models/Backup.swift`)
-- [ ] 2. Store wrappers and save errors (`TicketStore`, `PersistenceService`)
-- [ ] 3. File menu commands, panels and alerts (`TicketRadarApp.swift`)
-- [ ] 4. Settings window reloads when the store's settings change
-- [ ] 5. Self-check cases
+- [x] 1. Backup format, read, merge and save logic (`Models/Backup.swift`)
+- [x] 2. Store wrappers and save errors (`TicketStore`, `PersistenceService`)
+- [x] 3. File menu commands, panels and alerts (`TicketRadarApp.swift`)
+- [x] 4. Settings window reloads when the store's settings change
+- [x] 5. Self-check cases
 - [ ] 6. Docs
 
-Next: build · Open: none
+Next: docs, after PR #2 merges · Open: none
 
 ## 1. Goal
 Back up the whole setup to one file and restore it on the same or another Mac,

@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import UserNotifications
 
 @main
@@ -26,6 +27,15 @@ struct TicketRadarApp: App {
                 .frame(minWidth: 800, minHeight: 500)
         }
         .defaultSize(width: 1000, height: 650)
+        .commands {
+            CommandGroup(after: .newItem) {
+                Divider()
+                Button("Export Backup…") { BackupPanels.export(ticketStore) }
+                    .keyboardShortcut("e", modifiers: [.command, .shift])
+                Button("Import Backup…") { BackupPanels.import(ticketStore) }
+                    .keyboardShortcut("i", modifiers: [.command, .shift])
+            }
+        }
 
         Settings {
             SettingsView(ticketStore: ticketStore, onSettingsChanged: {
@@ -64,6 +74,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .list, .sound])
+    }
+}
+
+/// Save and open panels and result alerts for the File menu's backup commands.
+/// AppKit panels and alerts work with the main window closed.
+@MainActor
+enum BackupPanels {
+    static func export(_ store: TicketStore) {
+        NSApp.activate()
+        do {
+            let data = try store.exportBackup()
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [.json]
+            panel.nameFieldStringValue = "TicketRadar-backup-\(dateStamp()).json"
+            guard panel.runModal() == .OK, let url = panel.url else { return }
+            try data.write(to: url, options: .atomic)
+            alert("Backup exported", "Saved \(store.tickets.count) tickets and your settings to \(url.lastPathComponent).")
+        } catch {
+            alert("Export failed", error.localizedDescription, style: .warning)
+        }
+    }
+
+    static func `import`(_ store: TicketStore) {
+        NSApp.activate()
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let summary = try store.importBackup(try Backup.read(url))
+            alert("Backup imported", summary.alertText)
+        } catch {
+            alert("Import failed", error.localizedDescription, style: .warning)
+        }
+    }
+
+    private static func alert(_ title: String, _ text: String, style: NSAlert.Style = .informational) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = text
+        alert.alertStyle = style
+        alert.runModal()
+    }
+
+    /// Fixed calendar and locale, so the file name never shows e.g. a
+    /// Buddhist-calendar year.
+    private static func dateStamp() -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
     }
 }
 

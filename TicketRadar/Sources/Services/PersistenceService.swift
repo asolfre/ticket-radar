@@ -30,12 +30,13 @@ struct PersistenceService {
         return (try? decoder.decode([WatchedTicket].self, from: data)) ?? []
     }
 
-    static func saveTickets(_ tickets: [WatchedTicket]) {
+    /// Throws so a backup import can report a failed save; the regular saves
+    /// in `TicketStore` ignore errors with `try?`, as they always have.
+    static func saveTickets(_ tickets: [WatchedTicket]) throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let data = try? encoder.encode(tickets) else { return }
-        try? data.write(to: ticketsFileURL, options: .atomic)
+        try encoder.encode(tickets).write(to: ticketsFileURL, options: .atomic)
     }
 
     // MARK: - Settings
@@ -47,10 +48,9 @@ struct PersistenceService {
         return (try? JSONDecoder().decode(AppSettings.self, from: data)) ?? .default
     }
 
-    static func saveSettings(_ settings: AppSettings) {
+    static func saveSettings(_ settings: AppSettings) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let data = try? encoder.encode(settings) else { return }
-        try? data.write(to: settingsFileURL, options: .atomic)
+        try encoder.encode(settings).write(to: settingsFileURL, options: .atomic)
     }
 }
