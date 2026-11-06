@@ -84,10 +84,11 @@ enum BackupPanels {
     static func export(_ store: TicketStore) {
         NSApp.activate()
         do {
-            let data = try store.exportBackup()
+            let data = try Backup.export(tickets: store.tickets, settings: store.settings)
+            let date = Date().formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day())
             let panel = NSSavePanel()
             panel.allowedContentTypes = [.json]
-            panel.nameFieldStringValue = "TicketRadar-backup-\(dateStamp()).json"
+            panel.nameFieldStringValue = "TicketRadar-backup-\(date).json"
             guard panel.runModal() == .OK, let url = panel.url else { return }
             try data.write(to: url, options: .atomic)
             alert("Backup exported", "Saved \(store.tickets.count) tickets and your settings to \(url.lastPathComponent).")
@@ -117,16 +118,6 @@ enum BackupPanels {
         alert.informativeText = text
         alert.alertStyle = style
         alert.runModal()
-    }
-
-    /// Fixed calendar and locale, so the file name never shows e.g. a
-    /// Buddhist-calendar year.
-    private static func dateStamp() -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: Date())
     }
 }
 

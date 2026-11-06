@@ -361,10 +361,6 @@ final class TicketStore {
 
     // MARK: - Backup
 
-    func exportBackup() throws -> Data {
-        try Backup.export(tickets: tickets, settings: settings)
-    }
-
     /// Merges a backup into the live state, synchronously: no `await` between
     /// reading `tickets` and assigning them, so an in-flight refresh is not lost.
     /// Applies exactly what was saved; throws when a save failed.

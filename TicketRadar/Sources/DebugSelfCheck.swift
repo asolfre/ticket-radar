@@ -152,12 +152,12 @@ enum DebugSelfCheck {
             githubOwners: [" ops ": "acme-ops", "DATA": "acme-health", "API": "", "DOTORG": "acme.org",
                            "NL": "acme\nQ = evil", "DATA\n": "acme-x", "DATA = acme-health\nAPI": "acme-health",
                            "PAD": " acme-x ", "DUP": "acme-up", "dup": "acme-low", "SH": "x;curl", "BAD PREFIX": "acme-z"],
-            jiraSites: ["WEB": "https://acme-labs.atlassian.net/", "NODOT": "acme", "EVIL": "evil.example;curl x|sh"])
+            jiraSites: ["WEB": "https://acme-labs.atlassian.net/", "NODOT": "acme", "EVIL": "evil.example;curl x|sh", "LEAD": "-acme.atlassian.net"])
         let r3 = merge(backupFile([], file3), [], mac3)
         let orgs3 = r3.settings.githubOwners ?? [:], sites3 = r3.settings.jiraSites ?? [:]
         check(orgs3 == ["DATA": "acme-data", "OPS": "acme-ops", "PAD": "acme-x", "DUP": "acme-up"], "T3 orgs merged and validated")
         check(sites3 == ["DATA": "acme.atlassian.net", "WEB": "acme-labs.atlassian.net"], "T3 sites merged and validated")
-        check(r3.summary.addedMappings == 4 && r3.summary.droppedMappings == 9, "T3 added and dropped counts")
+        check(r3.summary.addedMappings == 4 && r3.summary.droppedMappings == 10, "T3 added and dropped counts")
         let cycled = AppSettings.parseProjectMap(AppSettings.formatProjectMap(orgs: orgs3, sites: sites3))
         check(cycled.orgs == orgs3 && cycled.sites == sites3, "T3 entries survive a Settings save unchanged")
         // Dictionary order is random per run: 16 case-only pairs per map make an

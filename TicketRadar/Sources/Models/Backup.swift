@@ -130,20 +130,17 @@ struct Backup: Codable {
         settings.jiraSites = sites.isEmpty ? nil : sites
     }
 
-    /// A Projects entry as Settings would store it, or nil when it is invalid
-    /// or would change in the Settings text. Sites end up in a command the
-    /// user can copy to Terminal, so values must look like a hostname or a
-    /// GitHub org name.
+    /// A Projects entry as Settings would store it, or nil when it is invalid.
+    /// Sites end up in a command the user can copy to Terminal, so values must
+    /// look like a hostname or a GitHub org name. The patterns also keep the
+    /// entry unchanged in the Settings text: no `=`, `,` or line break, and
+    /// only sites contain a dot.
     private static func projectEntry(_ prefix: String, _ value: String, isSite: Bool) -> (prefix: String, value: String)? {
         let prefix = prefix.trimmingCharacters(in: .whitespaces).uppercased()
         var value = value.trimmingCharacters(in: .whitespaces)
         if isSite { value = URL(string: value)?.host ?? value }
         guard matches(prefix, projectPrefixPattern),
               matches(value, isSite ? hostPattern : orgPattern) else { return nil }
-        let text = AppSettings.formatProjectMap(orgs: isSite ? nil : [prefix: value], sites: isSite ? [prefix: value] : nil)
-        let parsed = AppSettings.parseProjectMap(text)
-        guard (isSite ? parsed.sites : parsed.orgs) == [prefix: value],
-              (isSite ? parsed.orgs : parsed.sites).isEmpty else { return nil }
         return (prefix, value)
     }
 
@@ -226,7 +223,7 @@ struct Backup: Codable {
     // `$` also matches before a trailing line break ("DEMO-1\n").
     static let ticketKeyPattern = #"^[A-Z][A-Z0-9_]+-[0-9]+$"#
     static let projectPrefixPattern = #"^[A-Z][A-Z0-9_]+$"#
-    static let hostPattern = #"^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$"#
+    static let hostPattern = #"^[A-Za-z0-9][A-Za-z0-9-]*(\.[A-Za-z0-9-]+)+$"#
     static let orgPattern = #"^[A-Za-z0-9][A-Za-z0-9-]*$"#
 
     static func matches(_ value: String, _ pattern: String) -> Bool {

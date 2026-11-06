@@ -34,9 +34,9 @@ Acceptance criteria:
    entries are never overwritten. A prefix must look like a Jira project key
    (`^[A-Z][A-Z0-9_]+$` after trimming and uppercasing). A value is trimmed and
    must not be empty; a site is stored as its host and contains a dot, an org
-   does not; neither contains `,`, `=` or a line break. An entry is accepted
-   only if it comes back unchanged from the Settings text format. Other entries
-   are dropped.
+   does not; both start with a letter or digit and contain only letters,
+   digits, `-` and (sites) `.`, so an entry comes back unchanged from the
+   Settings text format. Other entries are dropped.
 4. Poll interval (only 1–30 minutes) and notifications are restored from the
    backup; a changed interval takes effect at once. The Jira base URL and the
    default GitHub org are restored only when this Mac has none. An empty value
@@ -135,7 +135,7 @@ Acceptance criteria:
 |---|------|------------|
 | R1 | Settings open during import writes the old mapping back | Item 4: reload only when the store differs from the draft |
 | R2 | PATH hijack through `customToolPath` | Neither exported nor imported (AC4), T4 |
-| R3 | Crash, option injection or Settings-line injection from a hand-edited file | Validate keys, PR URLs and mapping entries with whole-string matching and a format → parse check (AC3, AC8), T3, T5, T6 |
+| R3 | Crash, option injection or Settings-line injection from a hand-edited file | Validate keys, PR URLs and mapping entries with whole-string matching (AC3, AC8), T3, T5, T6 |
 | R4 | Format tied to `WatchedTicket` / `AppSettings` Codable | Optional fields decode as in `tickets.json`. Older apps reject a newer `version`; bump it for any change older apps cannot read (e.g. a new enum case). T7 |
 | R5 | Self-check touching real data | Logic in pure `Backup` functions (item 1) |
 | R6 | `pr-report` also adds File menu commands | This plan first, per `docs/plans/README.md` |
@@ -187,11 +187,10 @@ All pattern checks match the whole string with
        `knownPRURLs` kept; archived tickets keep `pullRequests`, `isArchived`
        and status;
      - mapping, prefixes in sorted order: trim and uppercase the prefix and
-       drop it unless it matches `^[A-Z][A-Z0-9_]+$`; trim the value and drop
-       it if empty or containing `,`, `=` or a line break; store a site as its
-       host and drop sites without a dot and orgs with a dot; drop an entry
-       unless `parseProjectMap(formatProjectMap(...))` returns it unchanged;
-       add only missing entries;
+       drop it unless it matches `^[A-Z][A-Z0-9_]+$`; trim the value, store a
+       site as its host, and drop a site unless it matches
+       `^[A-Za-z0-9][A-Za-z0-9-]*(\.[A-Za-z0-9-]+)+$` and an org unless it
+       matches `^[A-Za-z0-9][A-Za-z0-9-]*$`; add only missing entries;
      - settings: poll interval only if 1–30; notifications; base URL and
        default org only when this Mac has none and the backup has a value;
        never `customToolPath`;
@@ -204,7 +203,6 @@ All pattern checks match the whole string with
 2. **`PersistenceService` and `TicketStore`:**
    - `saveTickets` / `saveSettings` become `throws`; their two existing
      callers keep their current behaviour with `try?`;
-   - `exportBackup() throws -> Data`;
    - `importBackup(_:) throws -> Summary`, synchronous, merging against the
      live `tickets` with no `await` before assigning: refused in demo mode,
      then `Backup.commit` with the merged values; assign `tickets` only when
@@ -217,7 +215,7 @@ All pattern checks match the whole string with
 3. **`TicketRadarApp`:**
    - `.commands { CommandGroup(after: .newItem) { … } }` with Export Backup… (⇧⌘E) and Import Backup… (⇧⌘I);
    - `NSSavePanel` / `NSOpenPanel` limited to `.json`, default name
-     `TicketRadar-backup-<yyyy-MM-dd>.json` (POSIX locale, Gregorian calendar);
+     `TicketRadar-backup-<yyyy-MM-dd>.json` (ISO 8601 date, local time zone);
    - import reads through `Backup.read`;
    - `NSApp.activate()` first, so the panels open in front;
    - `NSAlert` for the summary and errors, including the too-large export
@@ -245,7 +243,7 @@ Each test gets a negative control: break the behaviour, see the named check fail
 |------|------|------------------|
 | T1 | Round trip keeps archived state and the archived PR snapshot | Drop `pullRequests` from archived tickets on export |
 | T2 | A key already watched (other case) is skipped, its data untouched; a key repeated in the file is imported once; imported tickets get new ids, even when the file reuses an existing id | Remove the skip, or keep file ids |
-| T3 | A missing prefix ` ops ` is added as `OPS`; an existing site and org are not overwritten; `""`, a dotless site, a dotted org, a value with a line break, `DATA\n` and `"DATA = acme-health\nAPI"` are dropped; ` acme-x ` is stored trimmed; `https://acme-labs.atlassian.net/` is stored as its host; a file with both `data` and `DATA` gives the same result every run; after a `formatProjectMap` → `parseProjectMap` cycle this Mac's `DATA` org is unchanged | Skip normalization, remove the prefix rule or the format → parse check, or match with `NSRegularExpression.firstMatch` |
+| T3 | A missing prefix ` ops ` is added as `OPS`; an existing site and org are not overwritten; `""`, a dotless site, a dotted org, a value with a line break, `DATA\n` and `"DATA = acme-health\nAPI"` are dropped; ` acme-x ` is stored trimmed; `https://acme-labs.atlassian.net/` is stored as its host; a site starting with `-` is dropped; a file with both `data` and `DATA` gives the same result every run; after a `formatProjectMap` → `parseProjectMap` cycle this Mac's `DATA` org is unchanged | Skip normalization, remove the prefix rule or the sorting, or match with `NSRegularExpression.firstMatch` |
 | T4 | `customToolPath` is neither exported nor imported | Export or copy it |
 | T5 | `--web`, `PROJ`, `1A-2` and `DEMO-1\n` are dropped and listed; `MY_PROJ-12` and `demo-1` (as `DEMO-1`) are accepted | Remove key validation, or match with `NSRegularExpression.firstMatch` |
 | T6 | PRs with `https://[github.com/a/pull/1`, `file:///x?github.com/pull/1`, `https://evil.example/a/b/pull/1` or `""` are dropped and counted; a valid one is kept, normalized | Remove the URL filter |
@@ -324,7 +322,9 @@ reopened.
   has a Copy button → G17, AC2, R14, T8.
 - F19 minor, mapping values the Settings text cannot represent (empty org,
   padded, URL site, `data` vs `DATA`) → format → parse check, sorted prefixes,
-  AC3, T3.
+  AC3, T3. At build the check proved redundant: the value patterns already
+  exclude everything it could catch, and no test input reached it. Replaced
+  by the patterns, which now also refuse a leading `-`.
 - F20 minor, `NSRegularExpression` accepted a trailing line break → whole-string
   matching named in step 1, T3, T5.
 - F21 minor, size check bypassed by a symlink; FIFO without a size → resolve,
