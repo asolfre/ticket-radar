@@ -71,16 +71,12 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 450, height: 640)
         .padding()
-        .onAppear {
-            pollInterval = Double(ticketStore.settings.pollIntervalMinutes)
-            notificationsEnabled = ticketStore.settings.notificationsEnabled
-            customToolPath = ticketStore.settings.customToolPath ?? ""
-            jiraBaseURL = ticketStore.settings.jiraBaseURL ?? ""
-            githubOwner = ticketStore.settings.githubOwner ?? ""
-            projectsText = AppSettings.formatProjectMap(
-                orgs: ticketStore.settings.githubOwners,
-                sites: ticketStore.settings.jiraSites
-            )
+        .onAppear { load(ticketStore.settings) }
+        // An import changes settings while this window may be open. Settings'
+        // own saves also land here; they equal the draft, so typed text stays.
+        .onChange(of: ticketStore.settings) { _, newSettings in
+            guard newSettings != draft else { return }
+            load(newSettings)
         }
         // Save on every change, not in onDisappear: closing the macOS Settings
         // window does not reliably fire onDisappear, so edits were never saved.
@@ -92,6 +88,15 @@ struct SettingsView: View {
             ticketStore.updateSettings(newSettings)
             if intervalChanged { onSettingsChanged?() }
         }
+    }
+
+    private func load(_ settings: AppSettings) {
+        pollInterval = Double(settings.pollIntervalMinutes)
+        notificationsEnabled = settings.notificationsEnabled
+        customToolPath = settings.customToolPath ?? ""
+        jiraBaseURL = settings.jiraBaseURL ?? ""
+        githubOwner = settings.githubOwner ?? ""
+        projectsText = AppSettings.formatProjectMap(orgs: settings.githubOwners, sites: settings.jiraSites)
     }
 
     private var draft: AppSettings {
