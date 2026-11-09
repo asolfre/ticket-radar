@@ -44,28 +44,49 @@ jobs:
           -configuration Release -destination 'generic/platform=macOS'
           -derivedDataPath "$RUNNER_TEMP/dd" -quiet build
 
-      - name: Check and package the release app
+      - name: Package and check the DMG and zip
         run: |
+          # Check what ships: the app inside each package.
+          check_app() {
+            for arch in arm64 x86_64; do
+              lipo "$1/Contents/MacOS/TicketRadar" -verify_arch "$arch" ||
+                { echo "::error::$2 app lacks $arch"; exit 1; }
+            done
+            codesign --verify --strict "$1"
+          }
           app="$RUNNER_TEMP/dd/Build/Products/Release/TicketRadar.app"
-          for arch in arm64 x86_64; do
-            lipo "$app/Contents/MacOS/TicketRadar" -verify_arch "$arch" ||
-              { echo "::error::release app lacks $arch"; exit 1; }
-          done
-          codesign --verify --strict "$app"
-          zip="TicketRadar-$VERSION-macos-universal.zip"
-          ditto -c -k --keepParent "$app" "$zip"
-          shasum -a 256 "$zip" > "$zip.sha256"
-          echo "ZIP=$zip" >> "$GITHUB_ENV"
+          base="TicketRadar-$VERSION-macos-universal"
+          stage="$RUNNER_TEMP/dmg" mnt="$RUNNER_TEMP/mnt" unzipped="$RUNNER_TEMP/unzipped"
+
+          mkdir "$stage"
+          ditto "$app" "$stage/TicketRadar.app"
+          ln -s /Applications "$stage/Applications"
+          hdiutil create -volname "TicketRadar $VERSION" -srcfolder "$stage" -format UDZO -ov "$base.dmg"
+          # -verify checks the image checksums before mounting.
+          hdiutil attach -verify -readonly -nobrowse -mountpoint "$mnt" "$base.dmg"
+          trap 'hdiutil detach "$mnt" -quiet' EXIT
+          check_app "$mnt/TicketRadar.app" DMG
+          [ "$(readlink "$mnt/Applications")" = /Applications ] ||
+            { echo "::error::DMG lacks the Applications link"; exit 1; }
+
+          ditto -c -k --keepParent "$app" "$base.zip"
+          ditto -x -k "$base.zip" "$unzipped"
+          check_app "$unzipped/TicketRadar.app" zip
+
+          shasum -a 256 "$base.dmg" > "$base.dmg.sha256"
+          shasum -a 256 "$base.zip" > "$base.zip.sha256"
+          echo "BASE=$base" >> "$GITHUB_ENV"
 
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "$ZIP" "$ZIP.sha256" \
+          files=("$BASE.dmg" "$BASE.dmg.sha256" "$BASE.zip" "$BASE.zip.sha256")
+          gh release create "$GITHUB_REF_NAME" "${files[@]}" \
             --title "TicketRadar $VERSION" --notes-from-tag
           assets=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name')
           echo "$assets"
-          for f in "$ZIP" "$ZIP.sha256"; do
+          for f in "${files[@]}"; do
             grep -Fx "$f" <<<"$assets" >/dev/null ||
               { echo "::error::release is missing asset $f"; exit 1; }
           done
