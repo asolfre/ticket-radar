@@ -226,7 +226,7 @@ struct ActionItem: Identifiable, Codable {
 14. Settings view: poll interval slider, notification toggles, PATH override
 15. Error handling: show inline errors per ticket (e.g. `acli` not found, auth expired)
 16. Menu bar context menu: quick actions (refresh all, open Jira ticket in browser)
-17. Keyboard shortcuts: Cmd+N (add ticket), Cmd+R (refresh), Delete (remove)
+17. Keyboard shortcuts: Cmd+R (refresh), Delete (remove). *Cmd+N (add ticket) was planned but not built.*
 18. App icon and menu bar icon design
 
 ---

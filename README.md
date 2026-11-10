@@ -164,14 +164,13 @@ Or open `TicketRadar.xcodeproj` in Xcode and press **Cmd+R**.
 
 1. Click the antenna icon in the menu bar
 2. Click **Open Window**
-3. Press **Cmd+N** to add a Jira ticket (e.g. `PROJ-7328`)
+3. Click **Add Ticket** at the bottom of the ticket list and enter a Jira ticket (e.g. `PROJ-7328`)
 4. Watch it auto-refresh, or press **Cmd+R** to refresh immediately
 
 ### Keyboard Shortcuts
 
 | Action | Shortcut |
 |--------|----------|
-| Add ticket | Cmd+N |
 | Refresh | Cmd+R |
 | Delete ticket | Delete |
 | Export backup | Shift+Cmd+E |
