@@ -28,8 +28,7 @@ struct TicketRadarApp: App {
         }
         .defaultSize(width: 1000, height: 650)
         .commands {
-            CommandGroup(after: .newItem) {
-                Divider()
+            CommandGroup(after: .importExport) {
                 Button("Export Backup…") { BackupPanels.export(ticketStore) }
                     .keyboardShortcut("e", modifiers: [.command, .shift])
                 Button("Import Backup…") { BackupPanels.import(ticketStore) }

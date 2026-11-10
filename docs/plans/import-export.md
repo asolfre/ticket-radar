@@ -1,7 +1,7 @@
 # Backup: export and import — plan
 
-**Base:** `origin/main` @ `73c92fd` (2026-10-22) · **Branch:** `feature/import-export` ·
-**Status:** planned 2026-11-06, challenged three times (R1–R3) and amended
+**Base:** `origin/main` @ `73c92fd` (2026-10-22), rebased on `c7472a8` (0.1.2) · **Branch:** `feature/import-export` ·
+**Status:** implemented and verified 2026-11-11; planned 2026-11-06, challenged three times (R1–R3) and amended
 
 ## 0. Status
 - [x] 1. Backup format, read, merge and save logic (`Models/Backup.swift`)
@@ -11,7 +11,28 @@
 - [x] 5. Self-check cases
 - [x] 6. Docs
 
-Next: hands-on test (§7.6), final review, PR · Open: none
+Next: PR · Open: none
+
+| # | Commit |
+|---|--------|
+| 1 | docs: plan the backup export and import |
+| 2 | fix: Settings reloads when settings change elsewhere (item 4) |
+| 3 | feat: export and import a backup from the File menu (items 1–3, 5) |
+| 4 | refactor: simplify the backup code after review |
+| 5 | docs: describe the backup export and import (item 6) |
+| 6 | docs: README no longer lists a Cmd+N shortcut |
+| 7 | fix: clearer import alert; backup commands in the Import/Export group |
+
+| Verification | Result |
+|--------------|--------|
+| Build, `xcodegen generate`, `Info.plist` unchanged | OK, no warnings in the touched files |
+| Self-check T1–T13 | exit 0 |
+| Negative controls | 26 of 26 caught for the right reason |
+| Changed-line coverage | 78.9 %: the rest is panels, alerts and disk writes, which the self-check must not reach; the hands-on test covers them |
+| Ponytail and security review | 3 simplifications applied; no security findings, one hardening (sites start with a letter or digit) |
+| Final review (fresh subagent) | AC1–AC8 met; 6 minor fixes applied in commits 5–7 |
+| Hands-on test §7.6 | 9 of 9 steps pass on real data, driven through Accessibility, data copied first; alert text and menu rechecked after commit 7 |
+| CI on the PR | pending |
 
 ## 1. Goal
 Back up the whole setup to one file and restore it on the same or another Mac,
@@ -214,7 +235,7 @@ All pattern checks match the whole string with
      tickets could not be saved"; `.settingsFailed` throws "Tickets were
      imported, but settings could not be saved".
 3. **`TicketRadarApp`:**
-   - `.commands { CommandGroup(after: .newItem) { … } }` with Export Backup… (⇧⌘E) and Import Backup… (⇧⌘I);
+   - `.commands { CommandGroup(after: .importExport) { … } }` with Export Backup… (⇧⌘E) and Import Backup… (⇧⌘I);
    - `NSSavePanel` / `NSOpenPanel` limited to `.json`, default name
      `TicketRadar-backup-<yyyy-MM-dd>.json` (ISO 8601 date, local time zone);
    - import reads through `Backup.read`;
@@ -229,9 +250,7 @@ All pattern checks match the whole string with
    - `docs/plans/README.md`: rewrite the import-export row, the order table
      and both warnings, which describe the superseded file-type design.
 
-Commits, files named explicitly, never pushed:
-- `fix: Settings reloads when settings change elsewhere` (item 4, revertable alone);
-- `feat: export and import a backup from the File menu` (items 1–3, 5, 6).
+Commits: see §0.
 
 ### Manual steps (user)
 - The hands-on test (§7.6).

@@ -231,11 +231,11 @@ enum DebugSelfCheck {
             check(merge(backupFile([], AppSettings(pollIntervalMinutes: bad)), [], mac9).settings.pollIntervalMinutes == 5,
                   "T9 poll interval \(bad) ignored")
         }
-        let set9 = AppSettings(jiraBaseURL: "https://mine.atlassian.net", githubOwner: "mine")
+        let set9 = AppSettings(jiraBaseURL: "https://acme-labs.atlassian.net", githubOwner: "acme-health")
         for file9 in [AppSettings(jiraBaseURL: "https://acme.atlassian.net", githubOwner: "acme-data"),
                       AppSettings(jiraBaseURL: "", githubOwner: "")] {
             let s = merge(backupFile([], file9), [], set9).settings
-            check(s.jiraBaseURL == "https://mine.atlassian.net" && s.githubOwner == "mine", "T9 this Mac's defaults kept")
+            check(s.jiraBaseURL == "https://acme-labs.atlassian.net" && s.githubOwner == "acme-health", "T9 this Mac's defaults kept")
         }
         let unsafe9 = merge(backupFile([], AppSettings(jiraBaseURL: "file:///etc", githubOwner: "x;rm"))).settings
         check(unsafe9.jiraBaseURL == nil && unsafe9.githubOwner == nil, "T9 unsafe defaults not restored")
@@ -257,6 +257,17 @@ enum DebugSelfCheck {
         s12.droppedKeys = [long12]
         check(Backup.Summary.shortened(long12) == short12 && s12.alertText.contains(short12)
               && !s12.alertText.contains(String(repeating: "Y", count: 19)), "T12 long key shortened to 40 characters")
+        let all12 = Backup.Summary(addedActive: 1, addedArchived: 1, skipped: 42, droppedKeys: ["--web"], droppedPRs: 4,
+                                   addedMappings: 2, droppedMappings: 9, restored: ["poll interval", "notifications"])
+        check(all12.alertText == """
+            Tickets added: 2 (1 active, 1 archived).
+            Tickets skipped, already watched or repeated in the file: 42.
+            Jira sites and GitHub orgs added to Projects: 2.
+            Restored: poll interval, notifications.
+            Invalid ticket keys dropped: 1 (--web).
+            Invalid PR links dropped: 4.
+            Invalid Projects entries dropped: 9.
+            """, "T12 alert text")
 
         // T13: an export Import would refuse is refused.
         let huge = WatchedTicket(ticketKey: "DEMO-13", title: String(repeating: "x", count: Backup.maxBytes + 1))

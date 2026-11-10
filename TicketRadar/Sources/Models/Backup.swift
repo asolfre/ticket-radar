@@ -52,7 +52,8 @@ struct Backup: Codable {
         var summary: Summary
     }
 
-    /// Adds what this Mac is missing and never overwrites what it has.
+    /// Adds the tickets and Projects entries this Mac is missing, never
+    /// overwriting its own; poll interval and notifications come from the backup.
     static func merge(_ data: Data, into tickets: [WatchedTicket], settings: AppSettings) throws -> Result {
         struct VersionOnly: Decodable { let version: Int }
         guard let version = try? decoder.decode(VersionOnly.self, from: data).version else {
@@ -196,17 +197,17 @@ struct Backup: Codable {
         static let maxKeyLength = 40
 
         var alertText: String {
-            var lines = ["Added \(addedActive + addedArchived) tickets (\(addedActive) active, \(addedArchived) archived)."]
-            if skipped > 0 { lines.append("Skipped \(skipped) already watched.") }
-            if addedMappings > 0 { lines.append("Added \(addedMappings) Projects entries.") }
+            var lines = ["Tickets added: \(addedActive + addedArchived) (\(addedActive) active, \(addedArchived) archived)."]
+            if skipped > 0 { lines.append("Tickets skipped, already watched or repeated in the file: \(skipped).") }
+            if addedMappings > 0 { lines.append("Jira sites and GitHub orgs added to Projects: \(addedMappings).") }
             if !restored.isEmpty { lines.append("Restored: \(restored.joined(separator: ", ")).") }
             if !droppedKeys.isEmpty {
                 var listed = droppedKeys.prefix(Self.maxListedKeys).map(Self.shortened).joined(separator: ", ")
                 if droppedKeys.count > Self.maxListedKeys { listed += ", and \(droppedKeys.count - Self.maxListedKeys) more" }
-                lines.append("Dropped \(droppedKeys.count) invalid ticket keys: \(listed).")
+                lines.append("Invalid ticket keys dropped: \(droppedKeys.count) (\(listed)).")
             }
-            if droppedPRs > 0 { lines.append("Dropped \(droppedPRs) invalid PR links.") }
-            if droppedMappings > 0 { lines.append("Dropped \(droppedMappings) invalid Projects entries.") }
+            if droppedPRs > 0 { lines.append("Invalid PR links dropped: \(droppedPRs).") }
+            if droppedMappings > 0 { lines.append("Invalid Projects entries dropped: \(droppedMappings).") }
             return lines.joined(separator: "\n")
         }
 
