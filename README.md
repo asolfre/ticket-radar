@@ -86,6 +86,7 @@ TicketRadar shells out to the GitHub CLI (`gh`) and Atlassian CLI (`acli`) rathe
 - **Clear fixes for auth problems** — GitHub SSO blocks and expired Jira sign-ins show the exact command to fix them, with a Copy button
 - **PR timing** — PR age and time-to-first-review per PR, so stalled reviews stand out
 - **Archive** — Park finished tickets in a collapsible Archived section; archived tickets are skipped by polling
+- **Backup** — Export your tickets and settings to one file, and import it on this or another Mac (see [Backup](#backup))
 - **Auto-refresh** — Polls every N minutes (configurable 1–30 min)
 - **macOS notifications** — PR approved, merged, CI failed, new comments
 - **Menu bar + Dock** — Always visible; one click on either opens the window, even after it was closed
@@ -173,6 +174,8 @@ Or open `TicketRadar.xcodeproj` in Xcode and press **Cmd+R**.
 | Add ticket | Cmd+N |
 | Refresh | Cmd+R |
 | Delete ticket | Delete |
+| Export backup | Shift+Cmd+E |
+| Import backup | Shift+Cmd+I |
 | Settings | Cmd+, |
 
 ---
@@ -194,6 +197,28 @@ Open **Settings** (Cmd+,) to configure:
 - **Custom PATH** — Override if `gh`/`acli` aren't found automatically
 
 Data is stored in `~/Library/Application Support/TicketRadar/`.
+
+---
+
+## Backup
+
+**File → Export Backup…** (Shift+Cmd+E) saves every ticket, active and
+archived, and your settings to one `.json` file. *Custom PATH* is left out,
+because it belongs to one Mac.
+
+**File → Import Backup…** (Shift+Cmd+I) merges such a file into this Mac's
+setup. It never overwrites tickets or *Projects* entries:
+
+- Tickets you don't watch yet are added; archived ones stay archived, active
+  ones are refreshed right away. Tickets you already watch keep this Mac's data.
+- Jira sites and GitHub orgs this Mac has not set for a prefix are added to
+  *Projects*.
+- Poll interval and notifications are taken from the backup. The Jira base URL
+  and GitHub organization only when they are empty on this Mac.
+
+An alert lists what was added, skipped and dropped. A backup can be edited by
+hand, so invalid ticket keys, PR links and *Projects* entries are dropped, and
+files over 10 MB are refused.
 
 ---
 

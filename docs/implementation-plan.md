@@ -270,7 +270,9 @@ struct ActionItem: Identifiable, Codable {
 - Filtering/sorting tickets by status
 - Auto-launch at login (easy to add later via `SMAppService`)
 - AI-based summarization of comments
-- Export/share functionality — *now planned, see `docs/plans/import-export.md`*
+- Export/share functionality — *backup export and import now implemented, see
+  `docs/plans/import-export.md`; sharing watchlists with other people is still
+  out of scope*
 
 ---
 

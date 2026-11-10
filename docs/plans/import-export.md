@@ -9,9 +9,9 @@
 - [x] 3. File menu commands, panels and alerts (`TicketRadarApp.swift`)
 - [x] 4. Settings window reloads when the store's settings change
 - [x] 5. Self-check cases
-- [ ] 6. Docs
+- [x] 6. Docs
 
-Next: docs, after PR #2 merges · Open: none
+Next: hands-on test (§7.6), final review, PR · Open: none
 
 ## 1. Goal
 Back up the whole setup to one file and restore it on the same or another Mac,
@@ -172,7 +172,7 @@ All pattern checks match the whole string with
      anything that is not a regular file (`isRegularFileKey`), then reads at
      most 10,000,001 bytes with `FileHandle.read(upToCount:)` and refuses more
      than 10,000,000.
-   - `static func merge(_:into:settings:) throws -> (tickets, settings, Summary)`:
+   - `static func merge(_:into:settings:) throws -> Result` (tickets, settings, summary):
      - decode, and reject `version > 1`;
      - uppercase each key; drop it unless it matches `^[A-Z][A-Z0-9_]+-[0-9]+$`;
      - skip keys already watched or seen earlier in the file;
@@ -192,8 +192,9 @@ All pattern checks match the whole string with
        `^[A-Za-z0-9][A-Za-z0-9-]*(\.[A-Za-z0-9-]+)+$` and an org unless it
        matches `^[A-Za-z0-9][A-Za-z0-9-]*$`; add only missing entries;
      - settings: poll interval only if 1–30; notifications; base URL and
-       default org only when this Mac has none and the backup has a value;
-       never `customToolPath`;
+       default org only when this Mac has none and the backup has a value,
+       the base URL only as http(s) with a host matching the site pattern,
+       the org only matching the org pattern; never `customToolPath`;
      - `Summary` counts added, skipped and dropped items and keeps the dropped
        keys; `summary.alertText` lists up to 10 of them, each shortened to 40
        characters with line breaks shown as ⏎, then "and N more".
@@ -249,7 +250,7 @@ Each test gets a negative control: break the behaviour, see the named check fail
 | T6 | PRs with `https://[github.com/a/pull/1`, `file:///x?github.com/pull/1`, `https://evil.example/a/b/pull/1` or `""` are dropped and counted; a valid one is kept, normalized | Remove the URL filter |
 | T7 | `version: 2` and non-backup JSON are rejected, inputs unchanged | Remove the version check |
 | T8 | An imported active ticket is `.idle`, has no PR snapshot, no search cache and no sign-in banners, and keeps `knownPRURLs`; an imported archived ticket keeps its PR snapshot and archived state, with no search cache and no sign-in banners | Keep the snapshot, the search cache or the banners |
-| T9 | Poll interval and notifications come from the backup; intervals `0`, `-1` and `Int.max` keep this Mac's; base URL and default org fill only when empty here; an empty backup value clears nothing | Remove the range check, or overwrite set values |
+| T9 | Poll interval and notifications come from the backup; intervals `0`, `-1` and `Int.max` keep this Mac's; base URL and default org fill only when empty here; an empty backup value clears nothing; a `file:` base URL and an org `x;rm` are not restored | Remove the range check, or overwrite set values |
 | T10 | In the temp folder, `Backup.read` refuses a sparse 10,000,001-byte file, a symlink to it and a FIFO (without blocking), and reads a small file | Check `fileSize` on the chosen URL instead of resolving and reading at most 10,000,001 bytes |
 | T11 | `commit` with a failing tickets save returns `.ticketsFailed` and never calls the settings save; with a failing settings save it returns `.settingsFailed` | Ignore the error and report `.saved` |
 | T12 | With 25 dropped keys the alert text lists 10, then "and 15 more"; a 1,000-character key with a line break is shown as 40 characters with ⏎ | List them all, or in full |
