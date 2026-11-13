@@ -77,6 +77,49 @@ any new non-trivial logic. Code it calls must not need the main actor:
 `waitFor` blocks the main thread, so a main-actor hop deadlocks (the run hangs
 instead of failing).
 
+### Coverage
+There is no test target, so `-enableCodeCoverage` fails ("only supported when
+testing"). Instrument a build in a throwaway folder, run the self-check, and
+export LCOV:
+
+```bash
+D=/Applications/Xcode.app/Contents/Developer; C=$(mktemp -d)
+DEVELOPER_DIR=$D xcodebuild -project TicketRadar.xcodeproj -scheme TicketRadar \
+  -destination 'platform=macOS' -derivedDataPath "$C/dd" -quiet build \
+  OTHER_SWIFT_FLAGS='$(inherited) -profile-generate -profile-coverage-mapping' \
+  OTHER_LDFLAGS='$(inherited) -fprofile-instr-generate'
+M="$C/dd/Build/Products/Debug/TicketRadar.app/Contents/MacOS"
+LLVM_PROFILE_FILE="$C/run.profraw" TR_SELFCHECK=1 "$M/TicketRadar"
+DEVELOPER_DIR=$D xcrun llvm-profdata merge -sparse "$C/run.profraw" -o "$C/run.profdata"
+DEVELOPER_DIR=$D xcrun llvm-cov export -format=lcov -instr-profile "$C/run.profdata" \
+  -object "$M/TicketRadar.debug.dylib" -object "$M/TicketRadar" > "$C/cov.info"
+```
+
+Views, panels, alerts and the saves in `PersistenceService` stay uncovered:
+the self-check never opens the UI or touches the data folder. Delete `$C`
+afterwards (over 100 MB).
+
+### Hands-on checks through Accessibility
+UI checks can be driven with System Events (`osascript`). They use the real
+app and its data: ask first, quit other copies and copy
+`~/Library/Application Support/TicketRadar/` before starting.
+
+- Menus: `tell application "System Events" to tell process "TicketRadar" to
+  click menu item "Import Backup…" of menu 1 of menu bar item "File" of menu bar 1`
+  returns at once, even when the item opens a dialog.
+- File dialogs: ⇧⌘G, set the sheet's text field to a full folder or file
+  path, Return; then Return for the default button (Save, Open).
+- Alerts: `value of static texts of window 1`, then `click button "OK" of window 1`.
+- Settings → Projects: `text area 1 of scroll area 1 of group 3 of scroll area 1
+  of group 1 of window "TicketRadar Settings"` (`group N` counts groups only).
+  Setting its `value` saves like typing.
+- Sidebar: `outline 1 of scroll area 1 of group 1 of splitter group 1 of
+  group 1 of window "TicketRadar"`; set a row's `selected` to true, then
+  Edit → Delete.
+- Keystrokes go to the frontmost app: check it is TicketRadar before each.
+- Read state through Accessibility, not screenshots: `screencapture` records
+  the whole screen, other apps included.
+
 ### Versioning
 Bump `CFBundleShortVersionString` and `CFBundleVersion` under `info.properties`
 in `project.yml` (the only version source; there are no `MARKETING_VERSION` /

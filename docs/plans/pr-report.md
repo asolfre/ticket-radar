@@ -63,6 +63,6 @@ and "blocked" are *periods*, and the app only stores snapshots.
 - New `Services/ReportService.swift` — pure functions: events → periods →
   report text. Add cases to `DebugSelfCheck.swift`.
 - `TicketRadarApp.swift` / `Views/TicketDetailView.swift` — a "Copy PR
-  report" command or button. Overlaps with the File menu commands planned in
-  `import-export.md`.
+  report" command or button. A File menu command goes in the existing
+  `.commands` block, next to Export and Import Backup.
 - `DemoData.swift` — fixtures need timelines for a screenshot.

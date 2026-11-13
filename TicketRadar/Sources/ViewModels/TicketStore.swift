@@ -309,8 +309,9 @@ final class TicketStore {
     ///
     /// Runs after a successful decode, never inside a decoder: a decode failure
     /// makes `PersistenceService.loadTickets` return `[]`, and the next save
-    /// would then wipe tickets.json.
-    static func migratePRURLs(_ tickets: [WatchedTicket]) -> [WatchedTicket] {
+    /// would then wipe tickets.json. `nonisolated`: pure, and also used by the
+    /// backup import outside the main actor.
+    nonisolated static func migratePRURLs(_ tickets: [WatchedTicket]) -> [WatchedTicket] {
         tickets.map { ticket in
             var t = ticket
             for i in t.pullRequests.indices {
@@ -355,7 +356,31 @@ final class TicketStore {
     func updateSettings(_ newSettings: AppSettings) {
         settings = newSettings
         guard !isDemoMode else { return }
-        PersistenceService.saveSettings(settings)
+        try? PersistenceService.saveSettings(settings)
+    }
+
+    // MARK: - Backup
+
+    /// Merges a backup into the live state, synchronously: no `await` between
+    /// reading `tickets` and assigning them, so an in-flight refresh is not lost.
+    /// Applies exactly what was saved; throws when a save failed.
+    func importBackup(_ data: Data) throws -> Backup.Summary {
+        guard !isDemoMode else { throw BackupError.demoMode }
+        let result = try Backup.merge(data, into: tickets, settings: settings)
+        let outcome = Backup.commit(
+            saveTickets: { try PersistenceService.saveTickets(result.tickets) },
+            saveSettings: { try PersistenceService.saveSettings(result.settings) }
+        )
+        guard outcome != .ticketsFailed else { throw BackupError.ticketsNotSaved }
+
+        tickets = result.tickets
+        Task { await refreshStaleTickets() }
+        guard outcome == .saved else { throw BackupError.settingsNotSaved }
+
+        let intervalChanged = result.settings.pollIntervalMinutes != settings.pollIntervalMinutes
+        settings = result.settings
+        if intervalChanged { restartPolling() }
+        return result.summary
     }
 
     // MARK: - Computed Properties
@@ -375,7 +400,7 @@ final class TicketStore {
         // Demo mode must never touch the user's real watchlist. Every mutating
         // path funnels through here, so this is the single guard that matters.
         guard !isDemoMode else { return }
-        PersistenceService.saveTickets(tickets)
+        try? PersistenceService.saveTickets(tickets)
     }
 
     /// Extract ticket key from a Jira URL or raw key input

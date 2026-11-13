@@ -226,7 +226,7 @@ struct ActionItem: Identifiable, Codable {
 14. Settings view: poll interval slider, notification toggles, PATH override
 15. Error handling: show inline errors per ticket (e.g. `acli` not found, auth expired)
 16. Menu bar context menu: quick actions (refresh all, open Jira ticket in browser)
-17. Keyboard shortcuts: Cmd+N (add ticket), Cmd+R (refresh), Delete (remove)
+17. Keyboard shortcuts: Cmd+R (refresh), Delete (remove). *Cmd+N (add ticket) was planned but not built.*
 18. App icon and menu bar icon design
 
 ---
@@ -270,7 +270,9 @@ struct ActionItem: Identifiable, Codable {
 - Filtering/sorting tickets by status
 - Auto-launch at login (easy to add later via `SMAppService`)
 - AI-based summarization of comments
-- Export/share functionality — *now planned, see `docs/plans/import-export.md`*
+- Export/share functionality — *backup export and import now implemented, see
+  `docs/plans/import-export.md`; sharing watchlists with other people is still
+  out of scope*
 
 ---
 
