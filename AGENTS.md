@@ -137,8 +137,10 @@ breaks, fall back in **both** files at once: `runs-on: macos-26`,
 version check pattern `'^Xcode 26\.6'`.
 
 If the release job fails while creating or attaching the DMG ("Resource
-temporarily unavailable"), re-run the job: locally, a macOS background
-service occasionally held a freshly created image for minutes.
+temporarily unavailable", or `hdiutil: create failed - No such file or
+directory`), re-run the job: locally, a macOS background service
+occasionally held a freshly created image for minutes, and on the runner
+the 0.1.3 release failed once this way and passed on the re-run.
 
 To release: bump the version (above), commit, push `main` and wait for CI to
 pass (the release job does not re-run CI's checks), then
