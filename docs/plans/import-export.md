@@ -11,7 +11,7 @@
 - [x] 5. Self-check cases
 - [x] 6. Docs
 
-Next: PR · Open: none
+Merged in PR #3, released in 0.1.3 · Open: none
 
 | # | Commit |
 |---|--------|
@@ -32,7 +32,7 @@ Next: PR · Open: none
 | Ponytail and security review | 3 simplifications applied; no security findings, one hardening (sites start with a letter or digit) |
 | Final review (fresh subagent) | AC1–AC8 met; 6 minor fixes applied in commits 5–7 |
 | Hands-on test §7.6 | 9 of 9 steps pass on real data, driven through Accessibility, data copied first; alert text and menu rechecked after commit 7 |
-| CI on the PR | pending |
+| CI on the PR (#3) | passed |
 
 ## 1. Goal
 Back up the whole setup to one file and restore it on the same or another Mac,
